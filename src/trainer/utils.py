@@ -158,3 +158,31 @@ def compute_satimp_loss(model, inputs, beta1, beta2):
         shift_labels.view(-1) != -100
     ].mean()
     return forget_loss, outputs
+
+
+def compute_masked_kl_divergence(model, target_model, inputs):
+    with torch.no_grad():
+        ref_outputs = target_model(**inputs)
+
+    outputs = model(**inputs)
+
+    ref_logits = ref_outputs.logits[:, :-1, :]
+    current_logits = outputs.logits[:, :-1, :]
+    shifted_labels = inputs["labels"][:, 1:]
+
+    mask = shifted_labels.ne(-100)
+
+    ref_log_probs = F.log_softmax(ref_logits, dim=-1)
+    current_log_probs = F.log_softmax(current_logits, dim=-1)
+
+    token_kl = F.kl_div(
+        current_log_probs,
+        ref_log_probs,
+        reduction="none",
+        log_target=True,
+    ).sum(dim=-1)
+
+    mask = mask.to(token_kl.dtype)
+    kl_loss = (token_kl * mask).sum() / mask.sum().clamp(min=1)
+
+    return kl_loss, outputs
