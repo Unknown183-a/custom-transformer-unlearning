@@ -131,7 +131,7 @@ Reading this table:
 
 - **The full and retain models are almost identical on all four memorisation metrics** (for example ES 0.112 vs 0.108). The model barely memorised the forget set, and EM is high (0.63) even for the retain model because many answer tokens are predictable without memorisation. The composite forgetting score therefore runs only from 0.540 (full) to 0.561 (retain), so a threshold such as 0.7 is not meaningful for forgetting on this model.
 - **E2 did not unlearn:** its numbers equal the full model's in every row.
-- **E0 and E1 forget past the retain model:** ES 0.030 versus 0.108, forget probability 0.07–0.10 versus 0.21, MIA AUC 0.31 versus 0.378. Both overshoot, which is why PrivLeak is positive.
+- **E0 and E1 seed 0 forget past the retain model:** ES 0.030 versus 0.108, forget probability 0.07-0.10 versus 0.21, MIA AUC 0.31 versus 0.378 (seed 0 only). Seeds 1 and 2 end closer to the retain model (step-65 PrivLeak -0.7 to +3.6), so the size of the overshoot depends on the seed.
 - **Utility cost:** retain-set probability falls from 0.242 to 0.085 (E0) and 0.134 (E1).
 
 ### 4.2 V1 and V2 (original metric set, single run each)
@@ -166,7 +166,7 @@ What the three seeds support:
 
 - **PCGrad's utility benefit holds across seeds.** At steps 26, 39 and 65 every E1 seed has higher model utility than every E0 seed. At step 65 the gap is +0.051 against a pooled seed sd of 0.013. Seed-matched differences are +0.044, +0.052 and +0.055 (assuming the same seed gives the same batch order, which was not verified). Retain-set probability is 0.147 versus 0.084, about 75 % higher, with no overlap between the two groups.
 - **E0's utility dips mid-training and varies more.** At step 26, E0 seeds 1 and 2 drop to 0.142 and 0.169, then recover to about 0.24; E1 stays above 0.26.
-- **No detectable effect on PrivLeak or the privacy score.** PrivLeak at step 65 is 3.8 ± 5.9 (E0) versus 5.6 ± 3.8 (E1); the groups overlap. Both overshoot the retain model on average.
+- **No detectable effect on PrivLeak or the privacy score.** PrivLeak at step 65 is 3.8 +/- 5.9 (E0) versus 5.6 +/- 3.8 (E1); the groups overlap, and with three seeds neither mean is clearly different from 0.
 - **Forget Quality is noisy** (0.52–0.94) and not used for conclusions.
 - n = 3 per arm, so standard deviations are rough; treat the numbers as indicative, not as significance tests.
 
@@ -202,8 +202,8 @@ Both changes move PrivLeak by under 1 point and utility by about one seed sd (0.
 2. **V2 → V3-E0:** the diagnostic reproduced V2 and exposed the real problem, a persistent conflict between the forgetting and retain gradients.
 3. **E0 → E1 (3 seeds):** resolving the conflict in the retain direction keeps more of the model's general ability at the same level of forgetting and privacy. This is the main positive result.
 4. **E0 → E2:** swapping the forget loss alone does not help in this configuration; the model does not unlearn. The likely cause (a **hypothesis, not tested**) is that the SimNPO loss is nearly flat when the per-token loss on forget answers is small, so δ needs to be raised.
-5. **E1 → V4a/V4b:** loss weights do not matter detectably; combined with the clipping observation, the update size seems to be set by clipping, not by the weights.
-6. **Over-forgetting is the consistent remaining problem:** PrivLeak at step 65 is positive in five of the six E0/E1 runs (E0 seed 1 is −0.7), and the step at which PrivLeak crosses 0 varies by seed, so a fixed stopping step is not robust.
+5. **E1 to V4a/V4b:** no detectable effect of the loss weights (one seed each, so only large effects would show). Pre-clip gradient norms are 65-400 against `max_grad_norm` 1.0, so every logged step is clipped, but clipping rescales the whole gradient by one factor and does not by itself explain why the weights had no effect. This is unexplained.
+6. **A mild privacy overshoot may remain, but the evidence is weak:** PrivLeak at step 65 is positive in five of the six E0/E1 runs (E0 seed 1 is -0.7), but only seed 0 is large (+9.9 and +10.5); the others lie between -0.7 and +3.6, and PrivLeak from a single MIA run on a few hundred examples per set is itself noisy. The step at which PrivLeak crosses 0 varies by seed, so a fixed stopping step is not robust.
 
 ---
 
@@ -229,7 +229,7 @@ Both changes move PrivLeak by under 1 point and utility by about one seed sd (0.
 
 **Next steps**
 
-1. Try a lower learning rate (for example 5e-6) or a larger `max_grad_norm` on E1 to test whether over-forgetting can be reduced (one seed first).
+1. Try a lower learning rate on E1 (check the current peak value in the logs first) to test whether the utility cost and the privacy overshoot shrink; use three seeds, since seed spread is as large as the effects seen so far. A larger `max_grad_norm` is lower priority: clipping rescales the whole gradient, and its effect with AdamW is untested.
 2. Re-run SimNPO with δ > 0 (≈ 1.4 as a starting guess) if time allows.
 3. Optional: repeat the best configuration on a model that memorises more (for example the Llama-3.2-1B checkpoints used in the paper) so forgetting metrics become informative.
 4. Optional: relearning or quantization stress tests, as in the paper.

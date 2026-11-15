@@ -30,4 +30,4 @@ PrivLeak target is 0. Retain-model MU is 0.340. sd = sample sd over 3 seeds.
 Seeds change training randomness only; forget and holdout examples are the same in every run. V4a and V4b have one seed each. E0 and E2 have one seed each. PrivLeak is computed against the retain90 model's MIA AUC (min_k 0.378); the stored retain-model PrivLeak (+24.4) was produced without that reference and is not meaningful.
 
 ## Next
-E0 (no PCGrad) with seeds 1 and 2, to test whether PCGrad's utility benefit survives seed noise.
+Done: E0 seeds 1 and 2 were run (see docs/EVOLUTION_REPORT.md). Next: lower learning rate on E1, three seeds.
