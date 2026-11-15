@@ -16,7 +16,7 @@ class MinKPlusPlusAttack(MinKProbAttack):
 
     def compute_score(self, sample_stats):
         """Score using min-k negative log probs scores with vocab-wise normalization."""
-        all_probs = sample_stats["vocab_log_probs"]
+        all_probs = sample_stats["vocab_log_probs"].float()
         target_prob = sample_stats["token_log_probs"]
 
         if len(target_prob) == 0:

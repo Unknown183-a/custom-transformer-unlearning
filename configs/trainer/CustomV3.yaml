@@ -1,0 +1,19 @@
+defaults:
+  - NPO
+
+handler: CustomV3
+
+method_args:
+  beta: 0.1
+  alpha: 1.0
+  gamma: 1.0
+  retain_loss_type: NLL
+  kl_alpha: 0.1
+  # ---- V3 switches (defaults reproduce V2) ----
+  forget_loss_type: npo      # npo | simnpo
+  simnpo_beta: 4.5
+  simnpo_delta: 0.0
+  grad_mode: sum             # sum | pcgrad
+  diag_every: 0              # >0: log gradient diagnostics every N optimizer steps
+  diag_layerwise: true
+  kl_fp32: false
