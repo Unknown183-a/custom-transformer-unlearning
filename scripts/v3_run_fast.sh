@@ -50,6 +50,16 @@ case "${1:-}" in
   e0_diag_seed)  # E0 (no PCGrad) with another seed (needs SEED=<n>)
     [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
     unlearn tofu_V3_E0_diag$SUF trainer.method_args.diag_every=5 $SEEDARG ;;
+  e5_pcgrad_lr)  # V5: ONE change vs E1: peak learning rate 1e-5 -> 5e-6 (needs SEED=<n>)
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V5_pcgrad_lr5e6$SUF trainer.method_args.grad_mode=pcgrad trainer.args.learning_rate=5e-6 trainer.method_args.diag_every=5 $SEEDARG ;;
+  eval_some)  # evaluate only chosen checkpoints: bash scripts/v3_run_fast.sh eval_some <task> <step> [<step> ...]
+    t=$2; shift 2
+    for s in "$@"; do evalckpt saves/unlearn/$t/checkpoint-$s ${t}_checkpoint-$s $REF_JSON; done ;;
+  e6_pcgrad_lrx)  # V6: E1 with a chosen peak learning rate (needs LR=<value> and SEED=<n>)
+    [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V6_pcgrad_lr${LR}$SUF trainer.method_args.grad_mode=pcgrad trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
