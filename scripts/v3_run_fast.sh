@@ -60,6 +60,15 @@ case "${1:-}" in
     [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
     [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
     unlearn tofu_V6_pcgrad_lr${LR}$SUF trainer.method_args.grad_mode=pcgrad trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
+  e7_pcgrad_kl)  # V7: E1 with a chosen KL weight (needs KL=<value> and SEED=<n>)
+    [ -n "${KL:-}" ] || { echo "set KL=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V7_pcgrad_kl${KL}$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.kl_alpha=$KL trainer.method_args.diag_every=5 $SEEDARG ;;
+  e8_pcgrad_kl_lr)  # V8: E1 with a chosen KL weight AND learning rate (needs KL, LR, SEED)
+    [ -n "${KL:-}" ] || { echo "set KL=<value>"; exit 1; }
+    [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V8_pcgrad_kl${KL}_lr${LR}$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.kl_alpha=$KL trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
