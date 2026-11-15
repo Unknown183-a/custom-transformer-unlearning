@@ -13,6 +13,9 @@ REF_JSON=saves/eval/$REF_TASK/TOFU_EVAL.json
 COMMON="mode=unlearn experiment=unlearn/tofu/custom_v3 trainer.args.do_eval=false trainer.args.eval_strategy=no trainer.args.eval_on_start=false \
  trainer.args.save_strategy=epoch trainer.args.gradient_checkpointing=false +trainer.args.remove_unused_columns=false"
 
+SEEDARG=""; SUF=""
+if [ -n "${SEED:-}" ]; then SEEDARG="trainer.args.seed=$SEED"; SUF="_s$SEED"; fi
+
 unlearn () {  # unlearn <task_name> [extra hydra overrides...]
   local t=$1; shift
   python src/train.py $COMMON task_name=$t "$@"
@@ -37,6 +40,13 @@ case "${1:-}" in
     unlearn tofu_V3_E2_simnpo trainer.method_args.forget_loss_type=simnpo trainer.method_args.gamma=0.125 trainer.method_args.simnpo_beta=4.5 trainer.method_args.diag_every=5 ;;
   e3_simnpo_pcgrad)  # hybrid: only run if E1 or E2 helped
     unlearn tofu_V3_E3_simnpo_pcgrad trainer.method_args.forget_loss_type=simnpo trainer.method_args.gamma=0.125 trainer.method_args.grad_mode=pcgrad trainer.method_args.diag_every=5 ;;
+  e4a_pcgrad_g05)  # V4a: one change vs E1: gamma 1.0 -> 0.5
+    unlearn tofu_V4a_pcgrad_g05$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.gamma=0.5 trainer.method_args.diag_every=5 $SEEDARG ;;
+  e4b_pcgrad_a2)   # V4b: one change vs E1: alpha 1.0 -> 2.0
+    unlearn tofu_V4b_pcgrad_a2$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.alpha=2.0 trainer.method_args.diag_every=5 $SEEDARG ;;
+  e1_pcgrad_seed)  # E1 repeated with another seed (needs SEED=<n>): noise baseline
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V3_E1_pcgrad$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.diag_every=5 $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
