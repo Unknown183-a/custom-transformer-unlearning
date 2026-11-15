@@ -238,7 +238,7 @@ Both changes move PrivLeak by under 1 point and utility by about one seed sd (0.
 
 ## 9. Items to fix before presenting
 
-- [ ] The project README states 65 steps per epoch and 325 in total, and a full-model PrivLeak of 3.89. The runs show 65 steps in total (13 per epoch) and the committed JSON gives −16.48. Correct the README.
+- [x] Resolved. The project README's "65 steps per epoch, 325 in total" is wrong: every run has 65 steps in total (13 per epoch) per `trainer_state.json`. Its full-model PrivLeak of 3.889 is exactly what the default reference AUC of 0.5 gives (100 x (0.5 - 0.4806) / 0.5, with the full model's min_k AUC of 0.4806). With the retain-model reference (AUC 0.378) the value is -16.48, as in `research_results/references/`. The retain model's stored +24.38 also comes from the default 0.5 reference. V1 and V2 have 26 metrics against 31 in the V3/V4 full-metric set. The project README still needs correcting.
 - [ ] The retain model's own PrivLeak (+24.4) was computed without the reference and is not meaningful; do not quote it.
 - [ ] Check the V1/V2 `trainer_state.json` files to confirm their step counts.
 - [ ] Forget Quality for E0 seed 0 (0.864) and V2 (0.967) differ for the same objective, which again points to run-to-run variation.
