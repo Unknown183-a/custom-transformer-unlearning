@@ -47,6 +47,9 @@ case "${1:-}" in
   e1_pcgrad_seed)  # E1 repeated with another seed (needs SEED=<n>): noise baseline
     [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
     unlearn tofu_V3_E1_pcgrad$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.diag_every=5 $SEEDARG ;;
+  e0_diag_seed)  # E0 (no PCGrad) with another seed (needs SEED=<n>)
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V3_E0_diag$SUF trainer.method_args.diag_every=5 $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
