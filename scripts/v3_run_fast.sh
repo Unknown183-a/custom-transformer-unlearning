@@ -74,6 +74,12 @@ case "${1:-}" in
     [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
     [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
     unlearn tofu_V9_sum_kl${KL}_lr${LR}$SUF trainer.method_args.kl_alpha=$KL trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
+  cfg_check)  # print the composed config of a stock baseline without running it: bash scripts/v3_run_fast.sh cfg_check NPO|GradDiff
+    unlearn tofu_cfgcheck trainer=${2:-NPO} --cfg job | grep -E "handler|learning_rate|num_train_epochs|warmup_epochs|beta|alpha|gamma|retain_loss_type|seed|pretrained_model_name_or_path" ;;
+  b1_npo)  # baseline: framework NPO (forget NPO + retain NLL, beta 0.1, gamma 1, alpha 1), same data/lr/epochs/eval as E0/E1
+    unlearn tofu_B1_npo$SUF trainer=NPO $SEEDARG ;;
+  b2_graddiff)  # baseline: framework GradDiff (gradient ascent on forget + retain NLL), same data/lr/epochs/eval
+    unlearn tofu_B2_graddiff$SUF trainer=GradDiff $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
