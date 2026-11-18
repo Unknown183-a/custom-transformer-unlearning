@@ -47,6 +47,39 @@ case "${1:-}" in
   e1_pcgrad_seed)  # E1 repeated with another seed (needs SEED=<n>): noise baseline
     [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
     unlearn tofu_V3_E1_pcgrad$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.diag_every=5 $SEEDARG ;;
+  e0_diag_seed)  # E0 (no PCGrad) with another seed (needs SEED=<n>)
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V3_E0_diag$SUF trainer.method_args.diag_every=5 $SEEDARG ;;
+  e5_pcgrad_lr)  # V5: ONE change vs E1: peak learning rate 1e-5 -> 5e-6 (needs SEED=<n>)
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V5_pcgrad_lr5e6$SUF trainer.method_args.grad_mode=pcgrad trainer.args.learning_rate=5e-6 trainer.method_args.diag_every=5 $SEEDARG ;;
+  eval_some)  # evaluate only chosen checkpoints: bash scripts/v3_run_fast.sh eval_some <task> <step> [<step> ...]
+    t=$2; shift 2
+    for s in "$@"; do evalckpt saves/unlearn/$t/checkpoint-$s ${t}_checkpoint-$s $REF_JSON; done ;;
+  e6_pcgrad_lrx)  # V6: E1 with a chosen peak learning rate (needs LR=<value> and SEED=<n>)
+    [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V6_pcgrad_lr${LR}$SUF trainer.method_args.grad_mode=pcgrad trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
+  e7_pcgrad_kl)  # V7: E1 with a chosen KL weight (needs KL=<value> and SEED=<n>)
+    [ -n "${KL:-}" ] || { echo "set KL=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V7_pcgrad_kl${KL}$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.kl_alpha=$KL trainer.method_args.diag_every=5 $SEEDARG ;;
+  e8_pcgrad_kl_lr)  # V8: E1 with a chosen KL weight AND learning rate (needs KL, LR, SEED)
+    [ -n "${KL:-}" ] || { echo "set KL=<value>"; exit 1; }
+    [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V8_pcgrad_kl${KL}_lr${LR}$SUF trainer.method_args.grad_mode=pcgrad trainer.method_args.kl_alpha=$KL trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
+  e9_sum_kl)  # V9: E0/V2 objective (no PCGrad) with a chosen KL weight and learning rate (needs KL, LR, SEED)
+    [ -n "${KL:-}" ] || { echo "set KL=<value>"; exit 1; }
+    [ -n "${LR:-}" ] || { echo "set LR=<value>"; exit 1; }
+    [ -n "${SEED:-}" ] || { echo "set SEED=<n>"; exit 1; }
+    unlearn tofu_V9_sum_kl${KL}_lr${LR}$SUF trainer.method_args.kl_alpha=$KL trainer.args.learning_rate=$LR trainer.method_args.diag_every=5 $SEEDARG ;;
+  cfg_check)  # print the composed config of a stock baseline without running it: bash scripts/v3_run_fast.sh cfg_check NPO|GradDiff
+    unlearn tofu_cfgcheck trainer=${2:-NPO} --cfg job | grep -E "handler|learning_rate|num_train_epochs|warmup_epochs|beta|alpha|gamma|retain_loss_type|seed|pretrained_model_name_or_path" ;;
+  b1_npo)  # baseline: framework NPO (forget NPO + retain NLL, beta 0.1, gamma 1, alpha 1), same data/lr/epochs/eval as E0/E1
+    unlearn tofu_B1_npo$SUF trainer=NPO $SEEDARG ;;
+  b2_graddiff)  # baseline: framework GradDiff (gradient ascent on forget + retain NLL), same data/lr/epochs/eval
+    unlearn tofu_B2_graddiff$SUF trainer=GradDiff $SEEDARG ;;
   eval_ckpts)  # evaluate every saved epoch checkpoint of a run: bash scripts/v3_run.sh eval_ckpts tofu_V3_E0_diag
     t=$2
     for ck in saves/unlearn/$t/checkpoint-*; do
