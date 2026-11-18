@@ -1,7 +1,7 @@
 # Unlearning Algorithm Evolution: V1 → V9
 
 **Model:** Qwen2.5-0.5B-Instruct  **Benchmark:** TOFU (forget10 / retain90 / holdout10)  **Framework:** OpenUnlearning
-**Status:** working draft, updated 17 November 2026. E0, E1, V6 (lr 8e-6), V8 and V9 have 3 seeds each. Anything not marked "3 seeds" is **single-seed**.
+**Status:** working draft, updated 17 November 2026. E0, E1, V6 (lr 8e-6), V7, V8 and V9 have 3 seeds each. Anything not marked "3 seeds" is **single-seed**.
 
 ---
 
@@ -33,7 +33,7 @@
 | **V4a / V4b** | E1 with forget weight γ 0.5 / retain NLL weight α 2.0 | One-change ablations on E1 | No effect detectable against seed noise |
 | **V5** | E1 with peak learning rate 1e-5 → 5e-6 (seed 0) | Test the utility cost and privacy overshoot through the learning rate | Barely unlearns: PrivLeak −12.6 (full model −16.5), utility 0.337; **single seed** |
 | **V6** | E1 with peak learning rate 7e-6 (seed 0) and 8e-6 (3 seeds) | Look for a rate between "too little" and "too much" forgetting | lr 8e-6, 3 seeds: PrivLeak −3.6 ± 3.9 (E1: +5.6 ± 3.8), utility 0.296 ± 0.015 (E1: 0.303 ± 0.010) |
-| **V7** | E1 with KL weight λ 0.1 → 0.5 (seed 0, lr 1e-5) | Test whether a stronger KL anchor protects retain-set ability | PrivLeak +12.7, utility 0.324, retain prob 0.154 (E1 seed 0: +9.9, 0.314, 0.134); **single seed, within noise** |
+| **V7** | E1 with KL weight λ 0.1 → 0.5 (lr 1e-5, 3 seeds) | Test whether a stronger KL anchor protects retain-set ability | 3 seeds: PrivLeak +7.6 ± 4.5, utility 0.319 ± 0.005, retain prob 0.167 ± 0.011 (E1: +5.6 ± 3.8, 0.303 ± 0.010, 0.147 ± 0.012). Higher retain-set probability and slightly higher utility; PrivLeak not lower |
 | **V8** | E1 with KL weight 0.5 **and** lr 8e-6 (two changes together) | Combine the two settings that looked useful | 3 seeds: PrivLeak −3.2 ± 3.6, utility 0.308 ± 0.012, retain prob 0.160 ± 0.001. **Not distinguishable from E1 on utility or privacy**; retain-set probability about +0.013 |
 | **V9** | V8 setting with PCGrad switched off (plain summed objective) | Ablation: is PCGrad still the active ingredient at the tuned setting? | 3 seeds: utility 0.246 ± 0.019, retain prob 0.083 ± 0.003. **Every V8 seed beats every V9 seed on utility and retain probability** |
 | *Planned* | SimNPO with δ > 0; external baselines (NPO, GradDiff) under the same protocol | Sections 6 and 8 | Not yet run |
@@ -198,7 +198,7 @@ Mean ± sample sd over seeds; scores from `scripts/three_scores.py`. Reference v
 | V5 (E1, lr 5e-6) | 1 | −12.6 | 0.337 | 0.233 | 0.813 | 0.997 | 0.864 |
 | V6 (E1, lr 7e-6) | 1 | −2.1 | 0.311 | 0.139 | 0.864 | 0.958 | 0.956 |
 | V6 (E1, lr 8e-6) | 3 | −3.6 ± 3.9 | 0.296 ± 0.015 | 0.141 ± 0.003 | 0.947 ± 0.035 | 0.933 ± 0.024 | 0.944 ± 0.023 |
-| V7 (E1, KL 0.5) | 1 | +12.7 | 0.324 | 0.154 | 0.813 | 0.979 | 0.894 |
+| V7 (E1, KL 0.5, lr 1e-5) | 3 | +7.6 ± 4.5 | 0.319 ± 0.005 | 0.167 ± 0.011 | 0.861 ± 0.047 | 0.970 ± 0.008 | 0.935 ± 0.036 |
 | V8 (E1, KL 0.5 + lr 8e-6) | 3 | −3.2 ± 3.6 | 0.308 ± 0.012 | 0.160 ± 0.001 | 0.927 ± 0.035 | 0.953 ± 0.019 | 0.948 ± 0.023 |
 | V9 (no PCGrad, KL 0.5 + lr 8e-6) | 3 | −4.9 ± 5.5 | 0.246 ± 0.019 | 0.083 ± 0.003 | 0.964 ± 0.022 | 0.842 ± 0.037 | 0.925 ± 0.025 |
 
@@ -214,11 +214,11 @@ Per seed (seeds 0, 1, 2) for the three groups at lr 8e-6:
 
 1. **PCGrad is the active ingredient at both settings.** Every V8 seed is above every V9 seed on utility (0.299–0.322 against 0.233–0.268) and on retain-set probability (0.159–0.161 against 0.081–0.087). The gain is about +0.06 utility and +0.08 retain probability at the tuned setting, against +0.05 and +0.06 at the original one (E1 against E0). With 3 seeds per group, perfect separation can happen by chance about 1 time in 20 per metric, so this is consistent evidence, not proof.
 2. **The learning rate moves PrivLeak.** At lr 8e-6 the mean PrivLeak is −3.6 ± 3.9 against +5.6 ± 3.8 for E1, a difference of about 9 points against a standard error of about 3, while utility stays within noise (0.296 against 0.303). Single-seed points on the same seed 0 show the trade-off: 5e-6 gives −12.6 (almost the full model, which scores −16.5), 7e-6 gives −2.1, 1e-5 gives +9.9.
-3. **A larger KL weight raises retain-set probability.** At lr 8e-6, KL 0.5 gives 0.160 ± 0.001 against 0.141 ± 0.003 for KL 0.1, with every V8 seed above every V6 seed. The utility difference (0.308 against 0.296) is within noise. At lr 1e-5, one seed (V7) points the same way (retain probability 0.154 against 0.134; utility 0.324 against 0.314).
-4. **The privacy shift is best attributed to the learning rate, not the KL weight.** The learning rate alone (V6) reproduces V8's PrivLeak (−3.6 against −3.2). The KL weight alone (V7, one seed) did not lower it (+12.7 against +9.9 for E1 seed 0). Interactions were not tested.
+3. **A larger KL weight raises retain-set probability.** At lr 8e-6, KL 0.5 gives 0.160 ± 0.001 against 0.141 ± 0.003 for KL 0.1, with every V8 seed above every V6 seed. At lr 1e-5 (V7 against E1, 3 seeds each) the direction is the same: retain probability 0.167 ± 0.011 against 0.147 ± 0.012, and utility 0.319 ± 0.005 against 0.303 ± 0.010. The utility gains (+0.012 and +0.016) are about one to two seed sd, so they are suggestive, not established.
+4. **The privacy shift is best attributed to the learning rate, not the KL weight.** The learning rate alone (V6) reproduces V8's PrivLeak (−3.6 against −3.2). The KL weight alone (V7, 3 seeds, lr 1e-5) did not lower it (+7.6 ± 4.5 against +5.6 ± 3.8 for E1). Interactions were not tested.
 5. **V8 is not shown to be better than E1.** Utility 0.308 against 0.303 and utility score 0.953 against 0.944 are within one seed sd; privacy score is 0.948 against 0.954. PrivLeak changes sign (−3.2 against +5.6), but the mean absolute value per seed is 3.8 against 5.6 with overlapping seeds. The one clear difference is retain-set probability (0.160 against 0.147, about one E1 sd), and it is much tighter across seeds.
 
-**Limits.** The learning rate and KL weight were chosen after looking at PrivLeak, which is measured on the same holdout10 examples in every run, so the V8 setting is partly selected on evaluation data. V8 changed two settings at once. V5, V6 (7e-6) and V7 have one seed each. V5 to V9 were evaluated at steps 26, 39 and 65 only. Raw files: `research_results/v5_v6` (with `summary.csv`), `v7`, `v8`, `v9`.
+**Limits.** The learning rate and KL weight were chosen after looking at PrivLeak, which is measured on the same holdout10 examples in every run, so the V8 setting is partly selected on evaluation data. V8 changed two settings at once. V5 and V6 (7e-6) have one seed each. V5 to V9 were evaluated at steps 26, 39 and 65 only. Raw files: `research_results/v5_v6` (with `summary.csv`), `v7`, `v8`, `v9`.
 
 ---
 
@@ -245,7 +245,7 @@ Per seed (seeds 0, 1, 2) for the three groups at lr 8e-6:
 5. **E1 to V4a/V4b:** no detectable effect of the loss weights (one seed each, so only large effects would show). Pre-clip gradient norms are 65-400 against `max_grad_norm` 1.0, so every logged step is clipped, but clipping rescales the whole gradient by one factor and does not by itself explain why the weights had no effect. This is unexplained.
 6. **A mild privacy overshoot may remain, but the evidence is weak:** PrivLeak at step 65 is positive in five of the six E0/E1 runs (E0 seed 1 is -0.7), but only seed 0 is large (+9.9 and +10.5); the others lie between -0.7 and +3.6, and PrivLeak from a single MIA run on a few hundred examples per set is itself noisy. The step at which PrivLeak crosses 0 varies by seed, so a fixed stopping step is not robust.
 7. **E1 → V5/V6 (learning rate):** the peak learning rate sets how far the model moves along one trade-off. At 5e-6 it barely unlearns (utility 0.337, PrivLeak −12.6); at 8e-6 the 3-seed mean PrivLeak is −3.6 with utility unchanged within noise; at 1e-5 it is +5.6. Privacy is mostly a question of how far the model is allowed to move.
-8. **E1 → V7 (KL weight):** a larger KL weight raises retain-set probability but does not lower PrivLeak (one seed).
+8. **E1 → V7 (KL weight):** a larger KL weight raises retain-set probability (0.167 against 0.147, 3 seeds each) and utility slightly (0.319 against 0.303) but does not lower PrivLeak.
 9. **V8 and V9 (combination and ablation):** combining lr 8e-6 with KL 0.5 gives a model that is not distinguishable from E1 on utility or privacy, with higher and steadier retain-set probability. Switching PCGrad off at the same setting loses about 0.06 utility and 0.08 retain probability in all three seeds.
 10. **Where the improvement stands:** one change reproducibly improves the model, PCGrad (3 seeds at two settings). The other changes tried either move along the learning-rate trade-off or are within seed noise. The version count overstates the progress: the real gain came at E1.
 
@@ -266,7 +266,7 @@ Per seed (seeds 0, 1, 2) for the three groups at lr 8e-6:
 
 **Limitations**
 
-- Three seeds for E0, E1, V6 (lr 8e-6), V8 and V9; one seed for E2, V4a, V4b, V5, V6 (lr 7e-6) and V7. Seeds change training randomness only; the forget and holdout examples are the same in every run.
+- Three seeds for E0, E1, V6 (lr 8e-6), V7, V8 and V9; one seed for E2, V4a, V4b, V5 and V6 (lr 7e-6). Seeds change training randomness only; the forget and holdout examples are the same in every run.
 - The learning rate and KL weight of V8 were chosen after seeing PrivLeak on the same holdout examples used for evaluation, so that setting is partly selected on evaluation data.
 - No external baseline: the framework's own NPO and GradDiff trainers have not been run under this protocol, so the report cannot say that E1 or V8 beat them.
 - The privacy score uses an approximation of the paper's formula; the composite forgetting score is not discriminative on this model.
